@@ -16,8 +16,10 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: SoftmaxModel) 
     Returns:
         Accuracy (float)
     """
-    # TODO: Implement this function (task 3c)
-    accuracy = 0
+    predictions = model.forward(X)
+    predictions = np.argmax(predictions, axis=1)
+    targets = np.argmax(targets, axis=1)
+    accuracy = np.mean(predictions == targets)
     return accuracy
 
 
@@ -35,8 +37,10 @@ class SoftmaxTrainer(BaseTrainer):
         Returns:
             loss value (float) on batch
         """
-        # TODO: Implement this function (task 3b)
-        loss = 0
+        output = self.model.forward(X_batch)
+        self.model.backward(X_batch, output, Y_batch)
+        self.model.w = self.model.w - self.learning_rate * self.model.grad
+        loss = cross_entropy_loss(Y_batch, output)
         return loss
 
     def validation_step(self):
@@ -126,15 +130,53 @@ def main():
     # You can finish the rest of task 4 below this point.
 
     # Plotting of softmax weights (Task 4b)
-    # plt.imsave("task4b_softmax_weight.png", weight, cmap="gray")
+    # function that prepares the weights for visualization
+    def visualize_softmax_weights(model: SoftmaxModel):
+        # Let's exclude the bias term and reshape the weights
+        weights = model.w[:-1, :].T  # Assuming the last weight is the bias term
+        weights_reshaped = weights.reshape(10, 28, 28)
+
+        # Normalize the weights for better visualization
+        # Here we use a different approach for normalization to spread out the intensities
+        weights_min = weights_reshaped.min()
+        weights_max = weights_reshaped.max()
+        weights_normalized = (weights_reshaped - weights_min) / (weights_max - weights_min)
+
+        # Stack the images horizontally
+        weights_horizontal = np.hstack(weights_normalized)
+        return weights_horizontal
+    weights = []
+    for models in [model, model1]:
+        weights.append(visualize_softmax_weights(models))
+
+    plt.imsave("task4b_softmax_weight.png", np.vstack(weights), cmap="gray")
 
     # Plotting of accuracy for difference values of lambdas (task 4c)
     l2_lambdas = [1, .1, .01, .001]
+    models = [SoftmaxModel(l2_reg_lambda=l) for l in l2_lambdas]
+    trainers = [SoftmaxTrainer(
+        model, learning_rate, batch_size, shuffle_dataset,
+        X_train, Y_train, X_val, Y_val,
+    ) for model in models]
+    histories = [(trainer.train(num_epochs), trainer.model.l2_reg_lambda) for trainer in trainers]
+    plt.ylim([0.80, .93])
+    for history in histories:
+        # Plot accuracy
+        utils.plot_loss(history[0][1]["accuracy"], "Validation Accuracy Lambda: " + str(history[1]))
+    plt.xlabel("Number of Training Steps")
+    plt.ylabel("Accuracy")
+    plt.legend()
     plt.savefig("task4c_l2_reg_accuracy.png")
+    plt.close()
 
-    # Task 4d - Plotting of the l2 norm for each weight
-
-    plt.savefig("task4d_l2_reg_norms.png")
+    # Task 4e - Plotting of the l2 norm for each weight
+    l2_norms = [np.sqrt(np.sum(np.square(model.w))) for model in models]
+    lambdas = [model.l2_reg_lambda for model in models]
+    plt.plot(lambdas, l2_norms, "o")
+    plt.xlabel("Lambda")
+    plt.ylabel("L2 Norm of weights")
+    plt.legend()
+    plt.savefig("task4e_l2_reg_norms.png")
 
 
 if __name__ == "__main__":
