@@ -90,5 +90,15 @@ class BaseTrainer:
 
                     # TODO (Task 2d): Implement early stopping here.
                     # You can access the validation loss in val_history["loss"]
+                    # Find the lowest validation loss
+                    lowest_val_loss = min(val_history["loss"].values())
+                    # Check if any of the latest 10 validation losses are lowest
+                    if len(val_history["loss"]) > 10:
+                        last_10 = list(val_history["loss"].values())[-10:]
+                        if all(last_10 > lowest_val_loss):
+                            print("Stopped after ", epoch, " epochs")
+                            return train_history, val_history
+
+
                 global_step += 1
         return train_history, val_history

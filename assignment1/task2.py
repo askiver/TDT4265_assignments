@@ -15,8 +15,11 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: BinaryModel) -
     Returns:
         Accuracy (float)
     """
+    predictions = model.forward(X)
+    predictions = (predictions > 0.5).astype(int)
+    accuracy = np.mean(predictions == targets)
+
     # TODO Implement this function (Task 2c)
-    accuracy = 0.0
     return accuracy
 
 
@@ -35,7 +38,10 @@ class LogisticTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2b)
-        loss = 0
+        output = self.model.forward(X_batch)
+        self.model.backward(X_batch, output, Y_batch)
+        self.model.w = self.model.w - self.learning_rate * self.model.grad
+        loss = cross_entropy_loss(Y_batch, output)
         return loss
 
     def validation_step(self):
@@ -63,7 +69,7 @@ class LogisticTrainer(BaseTrainer):
 
 def main():
     # hyperparameters DO NOT CHANGE IF NOT SPECIFIED IN ASSIGNMENT TEXT
-    num_epochs = 50
+    num_epochs = 500
     learning_rate = 0.05
     batch_size = 128
     shuffle_dataset = False
