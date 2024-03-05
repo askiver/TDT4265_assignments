@@ -1,3 +1,5 @@
+import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import pathlib
 import matplotlib.pyplot as plt
 import utils
@@ -26,7 +28,32 @@ class ExampleModel(nn.Module):
                 kernel_size=5,
                 stride=1,
                 padding=2,
-            )
+                padding_mode="zeros",
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
+            nn.Conv2d(
+                in_channels=num_filters,
+                out_channels=num_filters*2,
+                kernel_size=5,
+                stride=1,
+                padding=2,
+                padding_mode="zeros",
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+
+            nn.Conv2d(
+                in_channels=num_filters*2,
+                out_channels=num_filters*4,
+                kernel_size=5,
+                stride=1,
+                padding=2,
+                padding_mode="zeros",
+            ),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
         # The output of feature_extractor will be [batch_size, num_filters, 16, 16]
         self.num_output_features = 32 * 32 * 32
@@ -36,7 +63,11 @@ class ExampleModel(nn.Module):
         # There is no need for softmax activation function, as this is
         # included with nn.CrossEntropyLoss
         self.classifier = nn.Sequential(
-            nn.Linear(self.num_output_features, num_classes),
+            nn.Flatten(),
+            nn.Linear(4 * 4 * 4 * num_filters, 64),
+            nn.ReLU(),
+
+            nn.Linear(64, num_classes),
         )
 
     def forward(self, x):
@@ -47,13 +78,15 @@ class ExampleModel(nn.Module):
         """
         # TODO: Implement this function (Task  2a)
         batch_size = x.shape[0]
+        x = self.feature_extractor(x)
+        x = self.classifier(x)
         out = x
         expected_shape = (batch_size, self.num_classes)
         assert out.shape == (
             batch_size,
             self.num_classes,
         ), f"Expected output of forward pass to be: {expected_shape}, but got: {out.shape}"
-        return out
+        return x
 
 
 def create_plots(trainer: Trainer, name: str):

@@ -11,7 +11,7 @@ class BaseTrainer:
             batch_size: int,
             shuffle_dataset: bool,
             X_train: np.ndarray, Y_train: np.ndarray,
-            X_val: np.ndarray, Y_val: np.ndarray,) -> None:
+            X_val: np.ndarray, Y_val: np.ndarray, ) -> None:
         """
             Initialize the trainer responsible for performing the gradient descent loop.
         """
@@ -98,7 +98,6 @@ class BaseTrainer:
                         if all(last_10 > lowest_val_loss):
                             print("Stopped after ", epoch, " epochs")
                             return train_history, val_history
-
 
                 global_step += 1
         return train_history, val_history

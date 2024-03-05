@@ -20,8 +20,9 @@ def compute_loss_and_accuracy(
     Returns:
         [average_loss, accuracy]: both scalar.
     """
-    average_loss = 0
-    accuracy = 0
+    total_loss = 0
+    total_samples = 0
+    correct_predictions = 0
     # TODO: Implement this function (Task  2a)
     with torch.no_grad():
         for (X_batch, Y_batch) in dataloader:
@@ -31,7 +32,15 @@ def compute_loss_and_accuracy(
             # Forward pass the images through our model
             output_probs = model(X_batch)
 
-            # Compute Loss and Accuracy
+            loss = loss_criterion(output_probs, Y_batch)
+            total_loss += loss.item()
+
+            _, predicted = torch.max(output_probs.data, 1)
+            total_samples += Y_batch.size(0)
+            correct_predictions += (predicted == Y_batch).sum().item()
+
+        average_loss = total_loss / len(dataloader)
+        accuracy = correct_predictions / total_samples * 100
 
             # Predicted class is the max index over the column dimension
     return average_loss, accuracy
@@ -174,6 +183,10 @@ class Trainer:
                     self.save_model()
                     if self.should_early_stop():
                         print("Early stopping.")
+                        # print final train, validation and test accuracy
+                        print("Final train accuracy:", compute_loss_and_accuracy(self.dataloader_train, self.model, self.loss_criterion)[1])
+                        print("Final validation accuracy:", compute_loss_and_accuracy(self.dataloader_val, self.model, self.loss_criterion)[1])
+                        print("Final test accuracy:", compute_loss_and_accuracy(self.dataloader_test, self.model, self.loss_criterion)[1])
                         return
 
     def save_model(self):

@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import utils
 import matplotlib.pyplot as plt
@@ -18,8 +20,14 @@ def calculate_accuracy(
     Returns:
         Accuracy (float)
     """
-    # TODO: Implement this function (copy from last assignment)
-    accuracy = 0
+    predictions = model.forward(X)
+    # find the index with the highest probability
+    highest_arguments = np.argmax(predictions, axis=1)
+    one_hot_predictions = np.zeros_like(predictions)
+    one_hot_predictions[np.arange(len(predictions)), highest_arguments] = 1
+    correct_predictions = np.sum(np.all(one_hot_predictions == targets, axis=1))
+    accuracy = correct_predictions / len(targets)
+
     return accuracy
 
 
@@ -52,7 +60,19 @@ class SoftmaxTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2c)
-        loss = 0
+        output = self.model.forward(X_batch)
+        self.model.backward(X_batch, output, Y_batch)
+        for i in range(len(self.model.ws)):
+            current_gradient = self.model.grads[i]
+            if self.use_momentum:
+                self.previous_grads[i] = current_gradient + self.momentum_gamma * self.previous_grads[i]
+                # Update the weights
+                self.model.ws[i] -= self.learning_rate * self.previous_grads[i]
+            else:
+                self.model.ws[i] -= self.learning_rate * current_gradient
+        # Update weights
+
+        loss = cross_entropy_loss(Y_batch, output)
 
         return loss
 
@@ -80,20 +100,25 @@ class SoftmaxTrainer(BaseTrainer):
 def main():
     # hyperparameters DO NOT CHANGE IF NOT SPECIFIED IN ASSIGNMENT TEXT
     num_epochs = 50
-    learning_rate = 0.1
+    learning_rate = 0.02
     batch_size = 32
-    neurons_per_layer = [64, 10]
+    neurons_per_layer = [64] * 10 + [10]
     momentum_gamma = 0.9  # Task 3 hyperparameter
     shuffle_data = True
 
     # Settings for task 2 and 3. Keep all to false for task 2.
-    use_improved_sigmoid = False
-    use_improved_weight_init = False
-    use_momentum = False
+    use_improved_sigmoid = True
+    use_improved_weight_init = True
+    use_momentum = True
     use_relu = False
 
     # Load dataset
     X_train, Y_train, X_val, Y_val = utils.load_full_mnist()
+    # Find mean and std of all data
+    all_train_data = np.concatenate((X_train, X_val), axis=0)
+    mean = np.mean(all_train_data)
+    std = np.std(all_train_data)
+    print(f"Mean: {mean}, Std: {std}")
     X_train = pre_process_images(X_train)
     X_val = pre_process_images(X_val)
     Y_train = one_hot_encode(Y_train, 10)
@@ -139,13 +164,13 @@ def main():
     plt.ylabel("Cross Entropy Loss - Average")
     # Plot accuracy
     plt.subplot(1, 2, 2)
-    plt.ylim([0.8, 0.99])
+    plt.ylim([0.80, 1.01])
     utils.plot_loss(train_history["accuracy"], "Training Accuracy")
     utils.plot_loss(val_history["accuracy"], "Validation Accuracy")
     plt.xlabel("Number of Training Steps")
     plt.ylabel("Accuracy")
     plt.legend()
-    plt.savefig("task2c_train_loss.png")
+    plt.savefig("task4e_train_loss.png")
     plt.show()
 
 

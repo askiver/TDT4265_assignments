@@ -88,5 +88,15 @@ class BaseTrainer:
                     val_history["loss"][global_step] = val_loss
                     val_history["accuracy"][global_step] = accuracy_val
                     # TODO: Implement early stopping (copy from last assignment)
+                    # You can access the validation loss in val_history["loss"]
+                    # Find the lowest validation loss
+                    lowest_val_loss = min(val_history["loss"].values())
+                    # Check if any of the latest 10 validation losses are lowest
+                    if len(val_history["loss"]) > 50:
+                        last_10 = list(val_history["loss"].values())[-50:]
+                        if all(last_10 > lowest_val_loss):
+                            print("Stopped after ", epoch, " epochs")
+                            return train_history, val_history
+
                 global_step += 1
         return train_history, val_history
