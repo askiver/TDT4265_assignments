@@ -76,7 +76,6 @@ class ExampleModel(nn.Module):
         Args:
             x: Input image, shape: [batch_size, 3, 32, 32]
         """
-        # TODO: Implement this function (Task  2a)
         batch_size = x.shape[0]
         x = self.feature_extractor(x)
         x = self.classifier(x)
